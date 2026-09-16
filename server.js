@@ -4,11 +4,16 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
+// ==============================
+// Config
+// ==============================
+
 const configPath = path.join(__dirname, "config.json");
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
 const HOST = config.host || "127.0.0.1";
 const PORT = Number(config.port || 6535);
+
 const DATA_FILE = path.resolve(
   config.dataFile || path.join(__dirname, "data", "povo.json")
 );
@@ -48,7 +53,7 @@ function loadData() {
     }
 
     return {
-      history: data.history
+      history: normalizeHistory(data.history)
     };
   } catch (err) {
     console.error("[POVO] Failed to load data:", err);
@@ -131,27 +136,25 @@ function readBody(req) {
 // ==============================
 // 数据校验
 // ==============================
+//
+// 所有时间统一使用 Unix timestamp（毫秒）
+// 例如：1789495740000
+//
 
 function normalizeRecord(record, index) {
   if (!record || typeof record !== "object") {
     return null;
   }
 
-  const start = String(record.start || "");
-  const end = String(record.end || "");
+  const start = Number(record.start);
+  const end = Number(record.end);
 
-  if (!start || !end) {
-    return null;
-  }
-
-  const startTime = new Date(start).getTime();
-  const endTime = new Date(end).getTime();
-
-  if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) {
-    return null;
-  }
-
-  if (endTime <= startTime) {
+  if (
+    !Number.isFinite(start) ||
+    !Number.isFinite(end) ||
+    start <= 0 ||
+    end <= start
+  ) {
     return null;
   }
 
@@ -182,7 +185,10 @@ function normalizeHistory(history) {
 // ==============================
 
 async function handleRequest(req, res) {
-  const url = new URL(req.url, "http://127.0.0.1");
+  const url = new URL(
+    req.url,
+    "http://127.0.0.1"
+  );
 
   console.log(
     `[POVO] ${req.method} ${url.pathname}`
@@ -252,42 +258,21 @@ async function handleRequest(req, res) {
         ok: false,
         error: err.message
       });
+
       return;
     }
 
-    const start = String(body.start || "");
+    // 前端传入 Unix timestamp（毫秒）
+    const start = Number(body.start);
 
-    if (!start) {
-      sendJson(res, 400, {
-        ok: false,
-        error: "start is required"
-      });
-      return;
-    }
-
-    const startTime = new Date(start).getTime();
-
-    if (!Number.isFinite(startTime)) {
+    if (!Number.isFinite(start) || start <= 0) {
       sendJson(res, 400, {
         ok: false,
         error: "invalid start"
       });
+
       return;
     }
-
-    const endTime = startTime + MS7;
-
-    const end = new Date(endTime);
-
-    // 保持 datetime-local 格式
-    const pad = n => String(n).padStart(2, "0");
-
-    const endString =
-      `${end.getFullYear()}-` +
-      `${pad(end.getMonth() + 1)}-` +
-      `${pad(end.getDate())}T` +
-      `${pad(end.getHours())}:` +
-      `${pad(end.getMinutes())}`;
 
     const data = loadData();
 
@@ -296,16 +281,20 @@ async function handleRequest(req, res) {
         ok: false,
         error: "limit_reached",
         message: `最多只能使用 ${MAX} 次`,
-        history: data.history
+        history: data.history,
+        max: MAX
       });
 
       return;
     }
 
+    // 7 天后
+    const end = start + MS7;
+
     const record = {
       no: data.history.length + 1,
       start,
-      end: endString
+      end
     };
 
     data.history.push(record);
@@ -341,6 +330,7 @@ async function handleRequest(req, res) {
         ok: false,
         error: err.message
       });
+
       return;
     }
 
@@ -438,6 +428,7 @@ async function handleRequest(req, res) {
         ok: false,
         error: err.message
       });
+
       return;
     }
 
@@ -450,12 +441,23 @@ async function handleRequest(req, res) {
       return;
     }
 
-    const imported = normalizeHistory(body.history);
-
-    if (imported.length > MAX) {
+    if (body.history.length > MAX) {
       sendJson(res, 400, {
         ok: false,
         error: "too_many_records"
+      });
+
+      return;
+    }
+
+    const imported = normalizeHistory(body.history);
+
+    // 如果原始数据里有无效记录
+    // normalize 后数量不一致，拒绝导入
+    if (imported.length !== body.history.length) {
+      sendJson(res, 400, {
+        ok: false,
+        error: "invalid_history"
       });
 
       return;
@@ -527,12 +529,22 @@ server.listen(PORT, HOST, () => {
   );
 });
 
+// ==============================
+// Graceful shutdown
+// ==============================
+
 process.on("SIGTERM", () => {
   console.log("[POVO] SIGTERM received");
-  server.close(() => process.exit(0));
+
+  server.close(() => {
+    process.exit(0);
+  });
 });
 
 process.on("SIGINT", () => {
   console.log("[POVO] SIGINT received");
-  server.close(() => process.exit(0));
+
+  server.close(() => {
+    process.exit(0);
+  });
 });
