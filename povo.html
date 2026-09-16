@@ -1,0 +1,1719 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta name="theme-color" content="#f4f6f8">
+
+<title>povo 7日无限 ×24 计数器</title>
+
+<style>
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:#f4f6f8;
+  color:#1f2937;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",sans-serif
+}
+
+main{
+  max-width:760px;
+  margin:auto;
+  padding:20px 14px 50px
+}
+
+.card{
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  padding:20px;
+  margin:12px 0;
+  box-shadow:0 2px 10px #00000008
+}
+
+h1{
+  font-size:22px;
+  margin:0 0 5px
+}
+
+.sub{
+  color:#6b7280;
+  font-size:13px
+}
+
+.hero{
+  text-align:center;
+  padding:26px 20px
+}
+
+.remain{
+  font-size:58px;
+  font-weight:800;
+  line-height:1
+}
+
+.remain small{
+  font-size:20px;
+  color:#6b7280;
+  font-weight:500
+}
+
+.status{
+  margin:15px auto 20px;
+  padding:11px;
+  border-radius:12px;
+  background:#f3f4f6;
+  font-size:14px
+}
+
+.active{
+  background:#ecfdf5
+}
+
+button{
+  border:0;
+  border-radius:12px;
+  padding:13px 17px;
+  font-size:15px;
+  font-weight:650;
+  cursor:pointer
+}
+
+.primary{
+  width:100%;
+  background:#111827;
+  color:#fff;
+  font-size:17px
+}
+
+.secondary{
+  background:#f3f4f6;
+  color:#374151
+}
+
+.danger{
+  background:#fef2f2;
+  color:#b91c1c
+}
+
+button:disabled{
+  opacity:.5;
+  cursor:not-allowed
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px
+}
+
+.kv{
+  padding:13px;
+  border-radius:12px;
+  background:#f8fafc
+}
+
+.kv b{
+  display:block;
+  font-size:17px;
+  margin-top:4px
+}
+
+.label{
+  font-size:12px;
+  color:#6b7280
+}
+
+h2{
+  font-size:17px;
+  margin:0 0 14px
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 0;
+  border-bottom:1px solid #eef0f2;
+  font-size:14px
+}
+
+.row:last-child{
+  border:0
+}
+
+.muted{
+  color:#6b7280
+}
+
+.empty{
+  text-align:center;
+  color:#9ca3af;
+  padding:18px
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:10px
+}
+
+.actions button{
+  flex:1
+}
+
+.note{
+  font-size:12px;
+  color:#6b7280;
+  line-height:1.6
+}
+
+@media(max-width:520px){
+
+  .grid{
+    grid-template-columns:1fr
+  }
+
+  .remain{
+    font-size:50px
+  }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<main>
+
+  <div class="card hero">
+
+    <h1>povo 7日无限 ×24</h1>
+
+    <div class="sub">一个代码・最多使用 24 次</div>
+
+    <div class="remain" id="remain">
+      24<small> / 24</small>
+    </div>
+
+    <div class="status" id="status">
+      尚未使用
+    </div>
+
+    <button class="primary" id="use">
+      ＋ 使用一次
+    </button>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>当前这次</h2>
+
+    <div class="grid">
+
+      <div class="kv">
+        <span class="label">开始时间</span>
+        <b id="start">—</b>
+      </div>
+
+      <div class="kv">
+        <span class="label">结束时间</span>
+        <b id="end">—</b>
+      </div>
+
+      <div class="kv">
+        <span class="label">剩余时间</span>
+        <b id="left">—</b>
+      </div>
+
+      <div class="kv">
+        <span class="label">本次状态</span>
+        <b id="currentState">未使用</b>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>使用记录</h2>
+
+    <div id="history"></div>
+
+    <div class="actions">
+
+      <button class="secondary" id="undo">
+        撤销上一次
+      </button>
+
+      <button class="secondary" id="copy">
+        复制状态
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>数据管理</h2>
+
+    <div class="actions">
+
+      <button class="danger" id="reset">
+        清空全部记录
+      </button>
+
+    </div>
+
+    <p class="note">
+      数据保存在服务器端，与当前浏览器同步。
+      建议每次在 povo App 里实际兑换成功后，再点击「使用一次」，
+      并填写实际兑换时间。页面会每秒更新倒计时，但不会每秒向服务器发请求。
+    </p>
+
+  </div>
+
+</main>
+
+
+<script>
+
+/*
+ * ========================================
+ * povo 7日无限 ×24
+ * Server API version
+ * ========================================
+ */
+
+const KEY = "povo_7d_24_counter_v1";
+
+const MAX = 24;
+
+const MS7 = 7 * 24 * 60 * 60 * 1000;
+
+const API_BASE = "/povo/api";
+
+let data = {
+  history: []
+};
+
+let loading = false;
+
+let initialized = false;
+
+
+/*
+ * ========================================
+ * API
+ * ========================================
+ */
+
+async function api(path, options = {}) {
+
+  const response = await fetch(
+    API_BASE + path,
+    {
+      ...options,
+
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      },
+
+      cache: "no-store"
+    }
+  );
+
+
+  /*
+   * Auth 认证失败
+   *
+   * Nginx 的 auth_request 本身会返回 401，
+   * 这里直接跳转登录页面。
+   */
+
+  if (response.status === 401) {
+
+    const redirect =
+      encodeURIComponent(
+        window.location.pathname +
+        window.location.search
+      );
+
+    window.location.href =
+      `/auth/login?redirect=${redirect}`;
+
+    throw new Error("登录已过期");
+
+  }
+
+
+  let result;
+
+  try {
+
+    result = await response.json();
+
+  } catch {
+
+    throw new Error(
+      `服务器返回异常 (${response.status})`
+    );
+
+  }
+
+
+  if (!response.ok || result.ok === false) {
+
+    const error =
+      result.message ||
+      result.error ||
+      `请求失败 (${response.status})`;
+
+    const err =
+      new Error(error);
+
+    err.code =
+      result.error;
+
+    err.response =
+      result;
+
+    throw err;
+
+  }
+
+
+  return result;
+
+}
+
+
+/*
+ * ========================================
+ * localStorage
+ *
+ * 这里只用于：
+ *
+ * 1. 第一次迁移旧数据
+ * 2. 迁移失败时保留数据
+ *
+ * 正常运行以后不再把 localStorage
+ * 当作主数据源。
+ * ========================================
+ */
+
+function getLocalData() {
+
+  try {
+
+    const raw =
+      localStorage.getItem(KEY);
+
+    if (!raw) {
+      return null;
+    }
+
+    const parsed =
+      JSON.parse(raw);
+
+    if (
+      !parsed ||
+      !Array.isArray(parsed.history)
+    ) {
+      return null;
+    }
+
+    return {
+      history:
+        parsed.history
+    };
+
+  } catch (err) {
+
+    console.error(
+      "[POVO] localStorage 读取失败:",
+      err
+    );
+
+    return null;
+
+  }
+
+}
+
+
+/*
+ * ========================================
+ * 判断服务器数据是否为空
+ * ========================================
+ */
+
+function hasServerData(history) {
+
+  return (
+    Array.isArray(history) &&
+    history.length > 0
+  );
+
+}
+
+
+/*
+ * ========================================
+ * 数据规范化
+ *
+ * 保持你原来的 timestamp 格式：
+ *
+ * start: 176xxxxxxx
+ * end:   176xxxxxxx
+ *
+ * 不改成字符串。
+ * ========================================
+ */
+
+function normalizeHistory(history) {
+
+  if (!Array.isArray(history)) {
+    return [];
+  }
+
+  return history
+    .filter(x => {
+
+      if (!x || typeof x !== "object") {
+        return false;
+      }
+
+      const start =
+        Number(x.start);
+
+      const end =
+        Number(x.end);
+
+      return (
+        Number.isFinite(start) &&
+        Number.isFinite(end) &&
+        end > start
+      );
+
+    })
+    .slice(0, MAX)
+    .map((x, i) => ({
+      no: i + 1,
+      start: Number(x.start),
+      end: Number(x.end)
+    }));
+
+}
+
+
+/*
+ * ========================================
+ * 初始化
+ *
+ * 逻辑：
+ *
+ * ① 读取服务器
+ *
+ * ② 如果服务器有数据
+ *    → 服务器数据优先
+ *
+ * ③ 如果服务器为空
+ *    + localStorage 有旧数据
+ *    → 自动 import
+ *
+ * ④ 如果服务器为空
+ *    + localStorage 也为空
+ *    → 空数据
+ * ========================================
+ */
+
+async function init() {
+
+  loading = true;
+
+  render();
+
+  setStatus(
+    "正在读取服务器数据……"
+  );
+
+
+  try {
+
+    const server =
+      await api("/data");
+
+
+    let serverHistory =
+      normalizeHistory(
+        server.history
+      );
+
+
+    /*
+     * ------------------------------------
+     * 服务器已有数据
+     * ------------------------------------
+     */
+
+    if (hasServerData(serverHistory)) {
+
+      data.history =
+        serverHistory;
+
+      /*
+       * 如果浏览器还有旧 localStorage，
+       * 不删除。
+       *
+       * 因为服务器数据已经是主数据。
+       */
+
+      setStatus(
+        `服务器数据已加载 · ${data.history.length}/${MAX}`
+      );
+
+      initialized = true;
+
+      render();
+
+      return;
+    }
+
+
+    /*
+     * ------------------------------------
+     * 服务器为空
+     *
+     * 检查旧 localStorage
+     * ------------------------------------
+     */
+
+    const local =
+      getLocalData();
+
+
+    if (
+      local &&
+      Array.isArray(local.history) &&
+      local.history.length > 0
+    ) {
+
+      const localHistory =
+        normalizeHistory(
+          local.history
+        );
+
+
+      /*
+       * 自动迁移
+       */
+
+      setStatus(
+        "发现旧浏览器数据，正在迁移……"
+      );
+
+
+      const imported =
+        await api(
+          "/import",
+          {
+            method: "POST",
+
+            body: JSON.stringify({
+              history: localHistory
+            })
+          }
+        );
+
+
+      data.history =
+        normalizeHistory(
+          imported.history
+        );
+
+
+      setStatus(
+        `旧数据已迁移到服务器 · ${data.history.length}/${MAX}`
+      );
+
+    } else {
+
+      /*
+       * 没有任何旧数据
+       */
+
+      data.history = [];
+
+      setStatus(
+        `服务器数据为空 · 0/${MAX}`
+      );
+
+    }
+
+
+    initialized = true;
+
+    render();
+
+  } catch (err) {
+
+    console.error(
+      "[POVO] 初始化失败:",
+      err
+    );
+
+    setStatus(
+      `加载失败：${err.message}`,
+      true
+    );
+
+  } finally {
+
+    loading = false;
+
+    render();
+
+  }
+
+}
+
+
+/*
+ * ========================================
+ * 状态提示
+ * ========================================
+ */
+
+function setStatus(text, error = false) {
+
+  const el =
+    document.getElementById("status");
+
+  /*
+   * 注意：
+   *
+   * 页面原来的 status 是业务状态。
+   * 初始化时我们也会临时使用它显示
+   * 加载状态。
+   *
+   * render() 后会恢复正常业务状态。
+   */
+
+  if (error) {
+
+    el.className =
+      "status";
+
+    el.textContent =
+      text;
+
+  }
+
+}
+
+
+/*
+ * ========================================
+ * 时间格式
+ * ========================================
+ */
+
+function fmt(t) {
+
+  if (!t) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat(
+    "ja-JP",
+    {
+      year:"numeric",
+      month:"2-digit",
+      day:"2-digit",
+      weekday:"short",
+      hour:"2-digit",
+      minute:"2-digit",
+      second:"2-digit",
+      hour12:false
+    }
+  ).format(
+    new Date(t)
+  );
+
+}
+
+
+/*
+ * ========================================
+ * 剩余时间
+ * ========================================
+ */
+
+function remainText(ms) {
+
+  if (ms <= 0) {
+    return "已到期";
+  }
+
+  let d =
+    Math.floor(
+      ms / 86400000
+    );
+
+  ms %= 86400000;
+
+
+  let h =
+    Math.floor(
+      ms / 3600000
+    );
+
+  ms %= 3600000;
+
+
+  let m =
+    Math.floor(
+      ms / 60000
+    );
+
+
+  let s =
+    Math.floor(
+      (ms % 60000) / 1000
+    );
+
+
+  return (
+    `${d}天 ` +
+    `${String(h).padStart(2,"0")}:` +
+    `${String(m).padStart(2,"0")}:` +
+    `${String(s).padStart(2,"0")}`
+  );
+
+}
+
+
+/*
+ * ========================================
+ * 当前是否生效
+ * ========================================
+ */
+
+function active() {
+
+  const x =
+    data.history[
+      data.history.length - 1
+    ];
+
+  return (
+    x &&
+    Date.now() < x.end
+  );
+
+}
+
+
+/*
+ * ========================================
+ * Render
+ * ========================================
+ */
+
+function render() {
+
+  const history =
+    Array.isArray(data.history)
+      ? data.history
+      : [];
+
+
+  const used =
+    history.length;
+
+
+  const left =
+    MAX - used;
+
+
+  /*
+   * 剩余次数
+   */
+
+  document.getElementById(
+    "remain"
+  ).innerHTML =
+    `${left}<small> / ${MAX}</small>`;
+
+
+  /*
+   * 最近一次
+   */
+
+  const x =
+    history[
+      history.length - 1
+    ];
+
+
+  const st =
+    document.getElementById(
+      "status"
+    );
+
+
+  if (
+    x &&
+    Date.now() < x.end
+  ) {
+
+    st.className =
+      "status active";
+
+    st.textContent =
+      `第 ${x.no} 次正在生效 · ` +
+      `${remainText(
+        x.end - Date.now()
+      )} 后到期`;
+
+  } else if (x) {
+
+    st.className =
+      "status";
+
+    st.textContent =
+      `最近一次已于 ${fmt(x.end)} 到期`;
+
+  } else {
+
+    st.className =
+      "status";
+
+    st.textContent =
+      "尚未使用";
+
+  }
+
+
+  /*
+   * 当前这次
+   */
+
+  document.getElementById(
+    "start"
+  ).textContent =
+    x
+      ? fmt(x.start)
+      : "—";
+
+
+  document.getElementById(
+    "end"
+  ).textContent =
+    x
+      ? fmt(x.end)
+      : "—";
+
+
+  document.getElementById(
+    "left"
+  ).textContent =
+    x
+      ? (
+          Date.now() < x.end
+            ? remainText(
+                x.end - Date.now()
+              )
+            : "已到期"
+        )
+      : "—";
+
+
+  document.getElementById(
+    "currentState"
+  ).textContent =
+    x
+      ? (
+          Date.now() < x.end
+            ? "生效中"
+            : "已到期"
+        )
+      : "未使用";
+
+
+  /*
+   * 使用记录
+   */
+
+  const h =
+    document.getElementById(
+      "history"
+    );
+
+
+  if (!used) {
+
+    h.innerHTML =
+      '<div class="empty">还没有使用记录</div>';
+
+  } else {
+
+    h.innerHTML =
+      [...history]
+        .reverse()
+        .map(x => {
+
+          const r =
+            Date.now() < x.end
+              ? `<span>进行中 · ${remainText(
+                  x.end - Date.now()
+                )}</span>`
+              : "<span class='muted'>已到期</span>";
+
+
+          return `
+            <div class="row">
+
+              <div>
+
+                <b>第 ${x.no} 次</b>
+                <br>
+
+                <span class="muted">
+                  ${fmt(x.start)}
+                </span>
+
+                <br>
+
+                <span class="muted">
+                  → ${fmt(x.end)}
+                </span>
+
+              </div>
+
+              <div style="text-align:right">
+
+                ${r}
+
+                <br>
+
+                <button
+                  class="secondary"
+                  style="padding:7px 10px;margin-top:6px;font-size:12px"
+                  onclick="undoOne(${x.no})"
+                  ${loading ? "disabled" : ""}
+                >
+                  撤销此条
+                </button>
+
+              </div>
+
+            </div>
+          `;
+
+        })
+        .join("");
+
+  }
+
+
+  /*
+   * 使用按钮
+   */
+
+  const useButton =
+    document.getElementById("use");
+
+
+  useButton.disabled =
+    loading ||
+    !initialized ||
+    used >= MAX;
+
+
+  useButton.textContent =
+    used >= MAX
+      ? "24 次已全部使用"
+      : "＋ 使用一次";
+
+
+  /*
+   * 其他按钮
+   */
+
+  document.getElementById(
+    "undo"
+  ).disabled =
+    loading ||
+    !initialized ||
+    used === 0;
+
+
+  document.getElementById(
+    "reset"
+  ).disabled =
+    loading ||
+    !initialized ||
+    used === 0;
+
+}
+
+
+/*
+ * ========================================
+ * 时间输入
+ * ========================================
+ */
+
+function parseLocalDateTime(v) {
+
+  /*
+   * datetime-local 没有 timezone。
+   *
+   * 与你原来的逻辑完全一致：
+   * 按用户当前系统的本地时间解释。
+   */
+
+  const [date,time] =
+    v.split("T");
+
+
+  const [y,m,d] =
+    date
+      .split("-")
+      .map(Number);
+
+
+  const [hh,mm] =
+    time
+      .split(":")
+      .map(Number);
+
+
+  return new Date(
+    y,
+    m - 1,
+    d,
+    hh,
+    mm,
+    0,
+    0
+  ).getTime();
+
+}
+
+
+/*
+ * ========================================
+ * 默认输入时间
+ * ========================================
+ */
+
+function defaultLocalInput() {
+
+  const d =
+    new Date(
+      Date.now() -
+      new Date().getTimezoneOffset() * 60000
+    );
+
+
+  return d
+    .toISOString()
+    .slice(0,16);
+
+}
+
+
+/*
+ * ========================================
+ * 使用一次
+ * ========================================
+ */
+
+document.getElementById(
+  "use"
+).onclick = () => {
+
+  if (
+    loading ||
+    !initialized ||
+    data.history.length >= MAX
+  ) {
+    return;
+  }
+
+
+  const overlay =
+    document.createElement("div");
+
+
+  overlay.style.cssText =
+    "position:fixed;" +
+    "inset:0;" +
+    "background:#0008;" +
+    "display:flex;" +
+    "align-items:center;" +
+    "justify-content:center;" +
+    "padding:18px;" +
+    "z-index:9999";
+
+
+  const box =
+    document.createElement("div");
+
+
+  box.style.cssText =
+    "background:#fff;" +
+    "border-radius:16px;" +
+    "padding:20px;" +
+    "width:min(420px,100%);" +
+    "box-shadow:0 10px 40px #0004";
+
+
+  const now =
+    new Date();
+
+
+  const pad =
+    n =>
+      String(n).padStart(2,"0");
+
+
+  const local =
+    `${now.getFullYear()}-` +
+    `${pad(now.getMonth()+1)}-` +
+    `${pad(now.getDate())}T` +
+    `${pad(now.getHours())}:` +
+    `${pad(now.getMinutes())}`;
+
+
+  box.innerHTML = `
+
+    <h2 style="margin:0 0 8px;font-size:18px">
+      记录本次使用
+    </h2>
+
+    <div style="font-size:13px;color:#6b7280;margin-bottom:12px">
+
+      第 ${data.history.length + 1} 次 · 7天 = 168小时
+
+    </div>
+
+    <label
+      style="display:block;font-size:13px;color:#6b7280;margin-bottom:6px"
+    >
+      实际兑换开始时间
+    </label>
+
+    <input
+      id="povoStartInput"
+      type="datetime-local"
+      value="${local}"
+      style="width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px"
+    >
+
+    <div style="display:flex;gap:8px;margin-top:16px">
+
+      <button
+        id="povoCancel"
+        class="secondary"
+        style="flex:1"
+      >
+        取消
+      </button>
+
+      <button
+        id="povoConfirm"
+        class="primary"
+        style="flex:1"
+      >
+        确认记录
+      </button>
+
+    </div>
+  `;
+
+
+  overlay.appendChild(box);
+
+  document.body.appendChild(
+    overlay
+  );
+
+
+  box.querySelector(
+    "#povoCancel"
+  ).onclick =
+    () => overlay.remove();
+
+
+  box.querySelector(
+    "#povoConfirm"
+  ).onclick =
+    async () => {
+
+      const input =
+        box.querySelector(
+          "#povoStartInput"
+        );
+
+
+      if (!input.value) {
+
+        alert(
+          "请选择开始时间"
+        );
+
+        return;
+      }
+
+
+      const start =
+        parseLocalDateTime(
+          input.value
+        );
+
+
+      if (
+        !Number.isFinite(start)
+      ) {
+
+        alert(
+          "时间无效，请重新选择"
+        );
+
+        return;
+      }
+
+
+      /*
+       * 防止点击确认后重复提交
+       */
+
+      const confirmButton =
+        box.querySelector(
+          "#povoConfirm"
+        );
+
+
+      confirmButton.disabled =
+        true;
+
+
+      confirmButton.textContent =
+        "保存中…";
+
+
+      try {
+
+        const result =
+          await api(
+            "/use",
+            {
+              method:"POST",
+
+              body:JSON.stringify({
+                start
+              })
+            }
+          );
+
+
+        data.history =
+          normalizeHistory(
+            result.history
+          );
+
+
+        overlay.remove();
+
+
+        render();
+
+      } catch (err) {
+
+        console.error(
+          "[POVO] 使用记录失败:",
+          err
+        );
+
+
+        if (
+          err.code === "limit_reached"
+        ) {
+
+          alert(
+            "24 次已经全部使用"
+          );
+
+        } else {
+
+          alert(
+            `保存失败：${err.message}`
+          );
+
+        }
+
+
+        confirmButton.disabled =
+          false;
+
+        confirmButton.textContent =
+          "确认记录";
+
+      }
+
+    };
+
+};
+
+
+/*
+ * ========================================
+ * 撤销指定记录
+ * ========================================
+ */
+
+async function undoOne(no) {
+
+  if (
+    loading ||
+    !initialized
+  ) {
+    return;
+  }
+
+
+  const idx =
+    data.history.findIndex(
+      x => x.no === no
+    );
+
+
+  if (idx < 0) {
+    return;
+  }
+
+
+  const x =
+    data.history[idx];
+
+
+  if (
+    !confirm(
+      `确定撤销第 ${x.no} 次记录吗？\n` +
+      `${fmt(x.start)} → ${fmt(x.end)}`
+    )
+  ) {
+    return;
+  }
+
+
+  loading = true;
+
+  render();
+
+
+  try {
+
+    const result =
+      await api(
+        "/undo",
+        {
+          method:"POST",
+
+          body:JSON.stringify({
+            no
+          })
+        }
+      );
+
+
+    data.history =
+      normalizeHistory(
+        result.history
+      );
+
+
+    render();
+
+  } catch (err) {
+
+    console.error(
+      "[POVO] 撤销失败:",
+      err
+    );
+
+
+    alert(
+      `撤销失败：${err.message}`
+    );
+
+  } finally {
+
+    loading = false;
+
+    render();
+
+  }
+
+}
+
+
+/*
+ * ========================================
+ * 撤销上一次
+ * ========================================
+ */
+
+document.getElementById(
+  "undo"
+).onclick = async () => {
+
+  if (
+    loading ||
+    !initialized ||
+    !data.history.length
+  ) {
+    return;
+  }
+
+
+  const x =
+    data.history[
+      data.history.length - 1
+    ];
+
+
+  if (
+    !confirm(
+      `确定撤销最近一次记录（第 ${x.no} 次）吗？`
+    )
+  ) {
+    return;
+  }
+
+
+  loading = true;
+
+  render();
+
+
+  try {
+
+    const result =
+      await api(
+        "/undo",
+        {
+          method:"POST",
+
+          body:JSON.stringify({
+            no:x.no
+          })
+        }
+      );
+
+
+    data.history =
+      normalizeHistory(
+        result.history
+      );
+
+
+  } catch (err) {
+
+    console.error(
+      "[POVO] 撤销失败:",
+      err
+    );
+
+
+    alert(
+      `撤销失败：${err.message}`
+    );
+
+  } finally {
+
+    loading = false;
+
+    render();
+
+  }
+
+};
+
+
+/*
+ * ========================================
+ * 清空
+ * ========================================
+ */
+
+document.getElementById(
+  "reset"
+).onclick = async () => {
+
+  if (
+    loading ||
+    !initialized ||
+    !data.history.length
+  ) {
+    return;
+  }
+
+
+  if (
+    !confirm(
+      "确定清空全部 24 次记录吗？此操作不可恢复。"
+    )
+  ) {
+    return;
+  }
+
+
+  loading = true;
+
+  render();
+
+
+  try {
+
+    const result =
+      await api(
+        "/reset",
+        {
+          method:"POST"
+        }
+      );
+
+
+    data.history =
+      normalizeHistory(
+        result.history
+      );
+
+
+  } catch (err) {
+
+    console.error(
+      "[POVO] 清空失败:",
+      err
+    );
+
+
+    alert(
+      `清空失败：${err.message}`
+    );
+
+  } finally {
+
+    loading = false;
+
+    render();
+
+  }
+
+};
+
+
+/*
+ * ========================================
+ * 复制状态
+ * ========================================
+ */
+
+document.getElementById(
+  "copy"
+).onclick = async () => {
+
+  const used =
+    data.history.length;
+
+
+  const x =
+    data.history.at(-1);
+
+
+  let text =
+    `povo 7日无限 ×24\n` +
+    `已使用：${used}/24\n` +
+    `剩余：${24-used}次`;
+
+
+  if (x) {
+
+    text +=
+      `\n最近一次：第${x.no}次` +
+      `\n开始：${fmt(x.start)}` +
+      `\n结束：${fmt(x.end)}`;
+
+  }
+
+
+  try {
+
+    await navigator.clipboard.writeText(
+      text
+    );
+
+    alert("已复制");
+
+  } catch (err) {
+
+    console.error(
+      "[POVO] 复制失败:",
+      err
+    );
+
+    alert(text);
+
+  }
+
+};
+
+
+/*
+ * ========================================
+ * 启动
+ * ========================================
+ */
+
+init();
+
+
+/*
+ * ========================================
+ * 每秒更新 UI
+ *
+ * 这里只更新倒计时。
+ * 不请求服务器。
+ * ========================================
+ */
+
+setInterval(
+  render,
+  1000
+);
+
+</script>
+
+</body>
+
+</html>
