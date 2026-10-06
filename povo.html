@@ -135,6 +135,22 @@ h2{
   margin:0 0 14px
 }
 
+.history-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px
+}
+
+.copy-code{
+  flex-shrink:0;
+  padding:7px 11px;
+  font-size:12px;
+  font-weight:600;
+  background:#f3f4f6;
+  color:#374151
+}
+
 .row{
   display:flex;
   justify-content:space-between;
@@ -248,7 +264,10 @@ h2{
 
   <div class="card">
 
-    <h2>使用记录</h2>
+    <h2 class="history-title">
+      <span>使用记录</span>
+      <button class="copy-code" id="copyCode">复制</button>
+    </h2>
 
     <div id="history"></div>
 
@@ -306,6 +325,19 @@ const MAX = 24;
 const MS7 = 7 * 24 * 60 * 60 * 1000;
 
 const API_BASE = "/povo/api";
+
+/*
+ * ========================================
+ * povo 兑换码
+ *
+ * 把下面的 YOUR_CODE_HERE
+ * 替换成你实际要复制的兑换码。
+ *
+ * 点击「使用记录」右上角的「复制」，
+ * 会直接复制这个码到设备剪贴板。
+ * ========================================
+ */
+const COPY_CODE = "PUL7D8C4AE1F4G";
 
 let data = {
   history: []
@@ -1683,6 +1715,116 @@ document.getElementById(
     );
 
     alert(text);
+
+  }
+
+};
+
+
+/*
+ * ========================================
+ * 复制兑换码
+ * ========================================
+ */
+
+document.getElementById(
+  "copyCode"
+).onclick = async () => {
+
+  const button =
+    document.getElementById("copyCode");
+
+  if (
+    !COPY_CODE ||
+    COPY_CODE === "YOUR_CODE_HERE"
+  ) {
+    alert("请先在代码里的 COPY_CODE 填写兑换码");
+    return;
+  }
+
+  try {
+
+    await navigator.clipboard.writeText(
+      COPY_CODE
+    );
+
+    const original =
+      button.textContent;
+
+    button.textContent =
+      "已复制";
+
+    setTimeout(() => {
+      button.textContent =
+        original;
+    }, 1000);
+
+  } catch (err) {
+
+    console.error(
+      "[POVO] 复制兑换码失败:",
+      err
+    );
+
+    /*
+     * iOS / 某些浏览器如果 Clipboard API
+     * 不可用，则使用传统 textarea 方式。
+     */
+    try {
+
+      const textarea =
+        document.createElement("textarea");
+
+      textarea.value =
+        COPY_CODE;
+
+      textarea.style.position =
+        "fixed";
+
+      textarea.style.opacity =
+        "0";
+
+      document.body.appendChild(
+        textarea
+      );
+
+      textarea.select();
+
+      textarea.setSelectionRange(
+        0,
+        textarea.value.length
+      );
+
+      const ok =
+        document.execCommand("copy");
+
+      textarea.remove();
+
+      if (!ok) {
+        throw new Error("execCommand copy failed");
+      }
+
+      const original =
+        button.textContent;
+
+      button.textContent =
+        "已复制";
+
+      setTimeout(() => {
+        button.textContent =
+          original;
+      }, 1000);
+
+    } catch (fallbackErr) {
+
+      console.error(
+        "[POVO] 备用复制也失败:",
+        fallbackErr
+      );
+
+      alert("复制失败，请手动复制兑换码");
+
+    }
 
   }
 
